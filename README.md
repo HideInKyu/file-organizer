@@ -1,60 +1,70 @@
-Hyper-Efficient File Organizer
-This script automates the organization of your files by moving them from a designated "docking station" (like your Downloads folder) into a structured, categorized directory. It can organize new files as they arrive or re-organize an existing directory structure.
+# File Organizer
 
-Quick Start: Setup and Run
+This project is a Python script that automatically organizes files from a specified directory (the "docking station") into categorized folders based on their file type. It can also be used to re-organize an existing directory of sorted files.
 
-1. Install Dependencies
-   First, you need to install the required Python library. Open your terminal or command prompt and run the following command:
+-----
 
-pip install -r requirements.txt
+## Quick Start
 
-2. Configure Your Paths
-   Before running, you must configure your desired folders. Open the config.ini file in a text editor and change the paths to your liking:
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/hideinkyu/file-organizer.git
+    ```
+2.  **Navigate to the project directory:**
+    ```bash
+    cd file-organizer
+    ```
+3.  **Install the required dependencies:**
+    ```bash
+    pip install -r requirements.txt
+    ```
+4.  **Configure the script:**
+    Before running the script, you can customize the settings in the `config.ini` file.
+5.  **Run the script:**
+    ```bash
+    python main.py
+    ```
+    You will be prompted to choose between two options:
+    1.  Organize new files from the docking station
+    2.  Re-organize existing files in the organized directory
 
-[DEFAULT]
-docking_station_path = ~/Downloads
-organized_path = ~/Downloads/Organized
-stability_wait_time_seconds = 500
-duplicate_retention_days = 21
-scan_interval_seconds = 60
+-----
 
-docking_station_path: This is the folder the script will watch for new files (e.g., your default downloads folder).
+## Features
 
-organized_path: This is where your neatly sorted files and folders will be moved to.
+  * **Automatic file classification:** Sorts files into categories like documents, photos, videos, audio, archives, and more.
+  * **Directory classification:** Analyzes the contents of directories to classify them based on the most common file type within.
+  * **Duplicate handling:** Detects and handles duplicate files by renaming them.
+  * **Configurable:** Easily configure paths, wait times, and other settings through a `config.ini` file.
+  * **Interactive or automated:** Choose to organize new files or re-organize existing ones.
+  * **Stable file detection:** Waits for files to be fully downloaded or copied before organizing them.
 
-3. Run the Script
-   To start the organizer, navigate to the script's directory in your terminal and run the main.py file:
+-----
 
-python main.py
+## How It Works
 
-You will then be prompted to choose an action:
+The script operates by scanning a designated "docking station" directory for new files or an "organized" directory for existing files to re-organize. Here's a deeper look at its core functionalities:
 
-Enter 1 to start monitoring the docking station for new files. The script will scan for new items at a regular interval.
+### Configuration
 
-Enter 2 to perform a one-time re-organization of the files already inside your organized_path.
+  * The script begins by reading the `config.ini` file to load paths for the docking station and the organized files directory, as well as settings for file stability checks, duplicate retention, and scan intervals.
 
-To stop the script at any time, press Ctrl+C in the terminal.
+### File Stability
 
-How It Works
-The File Organizer is designed to be a "set it and forget it" utility that brings order to your digital clutter. It operates based on a few key principles.
+  * To avoid moving files that are still being written (e.g., in-progress downloads), the script uses an `is_file_stable` function. This function checks the file size, waits for a configurable period (`stability_wait_time_seconds`), and then checks the size again. A file is considered stable if its size has not changed.
 
-The Docking Station Concept
-The script treats your specified docking_station_path as a temporary holding area for all incoming files and folders. When you run the script in "organize new files" mode, it continuously scans this folder for items to process.
+### Classification
 
-File Stability Check
-To avoid moving files that are still being downloaded or written, the script performs a stability check. It waits for a file's size to remain unchanged for a specific period (defined by stability_wait_time_seconds in the config) before considering it ready for organization. Temporary download files (like .crdownload or .part) are automatically ignored.
+  * **Files:** Individual files are classified based on their extension. A `CATEGORY_MAP` dictionary maps a wide range of file extensions to their respective categories (e.g., 'pdf' to 'documents', 'jpg' to 'photos').
+  * **Directories:** For directories, the script performs a deeper analysis. It walks through the directory, guesses the file type of each file, and determines the most common file extension. This most common extension is then used to classify the entire directory.
 
-Intelligent Classification
-The script uses a multi-layered approach to classify your files and folders accurately:
+### Duplicate Handling
 
-For Individual Files: Classification is primarily based on the file's extension. A comprehensive internal map sorts files into categories like documents, photos, videos, archives, and more.
+  * If a file with the same name already exists in the target directory, the script's `get_unique_filename` function is called. This function appends a number to the filename (e.g., `file(1).txt`) to ensure that the original file is not overwritten. The new file is then moved to a 'duplicates' folder within the organized directory.
 
-For Directories: To classify a folder, the script analyzes its contents to find the most common file type within it. The folder is then moved to the category corresponding to that dominant file type.
+### Main Logic
 
-Fallback Category: If a file type is unknown, it will be placed in a default other directory, ensuring no file is left behind.
-
-Duplicate Handling
-If the script finds an item in the docking station with the same name as an item that already exists in the target category, it handles it intelligently. Instead of overwriting, it renames the new file by appending a number (e.g., report.pdf becomes report(1).pdf) and places it in a dedicated duplicates folder for your review. This ensures no data is accidentally lost.
-
-Re-organization Mode
-If you've manually moved files around or want to apply new sorting logic to your existing organized structure, the "re-organize" mode is for you. It scans all the subdirectories within your organized_path and checks if each file is in its correct category. If any files are misplaced, it will move them to their proper home, restoring order to your archive.
+  * The script presents two main choices to the user: organize new files or re-organize existing ones.
+      * **Organize New Files:** If the user chooses to organize new files, the script scans the docking station, classifies each item, and then moves it to the appropriate category folder within the organized directory.
+      * **Re-organize Existing Files:** If the user opts to re-organize, the script scans the existing category folders in the organized directory. If a file or directory's classification has changed, it is moved to the correct new category folder.
+  * Both processes run in a loop, periodically scanning for new files or changes, until the user stops the script.
