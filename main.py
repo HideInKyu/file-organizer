@@ -9,6 +9,7 @@ import logging
 import filetype
 import configparser
 from collections import deque, Counter
+from datetime import datetime, timedelta
 
 # Get the directory of the current script
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -63,6 +64,11 @@ CATEGORY_MAP = {
 }
 
 # --- Core Logic ---
+def get_week_folder_name(date):
+    start_of_week = date - timedelta(days=(date.weekday() + 1) % 7)
+    end_of_week = start_of_week + timedelta(days=6)
+    return f"{start_of_week.strftime('%B %d')}-{end_of_week.strftime('%d')}"
+
 def is_file_stable(file_path):
     """Checks if a file is stable by verifying its size over a period of time."""
     if not os.path.exists(file_path):
@@ -124,7 +130,16 @@ def get_unique_filename(directory, filename):
 
 def move_item(source_path, category):
     """Moves a file or directory to the appropriate category folder."""
-    target_dir = os.path.join(ORGANIZED_PATH, category)
+    today = datetime.now()
+    week_folder = get_week_folder_name(today)
+    target_dir = os.path.join(ORGANIZED_PATH, category, week_folder)
+
+    # Check if the source is a file and get its extension
+    if os.path.isfile(source_path):
+        ext = os.path.splitext(source_path)[1][1:].lower()
+        if ext:
+            target_dir = os.path.join(target_dir, ext)
+
     if not os.path.exists(target_dir):
         os.makedirs(target_dir, exist_ok=True)
 
@@ -197,6 +212,8 @@ def organize_new_files():
     abs_organized_path = os.path.abspath(ORGANIZED_PATH)
 
     for item_name in os.listdir(DOCKING_STATION_PATH):
+        if item_name.startswith('.'):
+            continue
         item_path = os.path.join(DOCKING_STATION_PATH, item_name)
         
         # Skip the organized folder itself
